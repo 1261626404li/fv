@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者端 - 在线挂号</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.disconnected {
+            background: #dc3545;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-submit:hover {
+            background: #5568d3;
+        }
+
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .queue-status {
+            display: none;
+        }
+
+        .queue-status.active {
+            display: block;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .queue-number-display {
+            font-size: 72px;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+
+        .status-info {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .status-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .status-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .patient-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .patient-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .patient-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+        }
+
+        .info-value {
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-consulting {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .btn-new-registration {
+            width: 100%;
+            padding: 12px;
+            background: white;
+            color: #667eea;
+            border: 2px solid white;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-new-registration:hover {
+            background: rgba(255,255,255,0.9);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>👤 患者端 - 在线挂号</h1>
+            <div class="connection-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="connectionStatus">连接中...</span>
+            </div>
+        </header>
+
+        <!-- 挂号表单 -->
+        <div class="card" id="registrationForm">
+            <h2>患者挂号</h2>
+            <form id="patientForm">
+                <div class="form-group">
+                    <label>姓名 *</label>
+                    <input type="text" id="patientName" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>性别 *</label>
+                        <select id="gender" required>
+                            <option value="">请选择</option>
+                            <option value="男">男</option>
+                            <option value="女">女</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>年龄 *</label>
+                        <input type="number" id="age" min="0" max="150" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>联系电话 *</label>
+                    <input type="tel" id="phone" pattern="[0-9]{11}" placeholder="11位手机号" required>
+                </div>
+
+                <div class="form-group">
+                    <label>身份证号</label>
+                    <input type="text" id="idCard" pattern="[0-9X]{18}" placeholder="18位身份证号">
+                </div>
+
+                <div class="form-group">
+                    <label>就诊科室 *</label>
+                    <select id="department" required>
+                        <option value="">请选择科室</option>
+                        <option value="内科">内科</option>
+                        <option value="外科">外科</option>
+                        <option value="儿科">儿科</option>
+                        <option value="妇产科">妇产科</option>
+                        <option value="骨科">骨科</option>
+                        <option value="眼科">眼科</option>
+                        <option value="耳鼻喉科">耳鼻喉科</option>
+                        <option value="口腔科">口腔科</option>
+                        <option value="皮肤科">皮肤科</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>挂号类型 *</label>
+                    <select id="registrationType" required>
+                        <option value="普通">普通号（15分钟/人）</option>
+                        <option value="专家">专家号（30分钟/人）</option>
+                        <option value="急诊">急诊号（10分钟/人）</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>症状描述</label>
+                    <textarea id="symptoms" rows="3" placeholder="简要描述您的症状"></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">提交挂号</button>
+            </form>
+        </div>
+
+        <!-- 排队状态 -->
+        <div class="queue-status" id="queueStatus">
+            <div class="status-card">
+                <h2 style="color: white; margin-bottom: 10px;">您的排队号码</h2>
+                <div class="queue-number-display" id="queueNumberDisplay">-</div>
+                <div class="status-badge" id="statusBadge">等待中</div>
+
+                <div class="status-info">
+                    <div class="status-info-item">
+                        <span>就诊科室</span>
+                        <strong id="statusDepartment">-</strong>
+                    </div>
+                    <div class="status-info-item">
+                        <span>挂号类型</span>
+                        <strong id="statusType">-</strong>
+                    </div>
+                    <div class="status-info-item">
+                        <span>预计等待时间</span>
+                        <strong id="estimatedWait">-</strong>
+                    </div>
+                </div>
+
+                <button class="btn-new-registration" onclick="newRegistration()">返回重新挂号</button>
+            </div>
+
+            <div class="patient-info">
+                <h3 style="margin-bottom: 15px; color: #667eea;">患者信息</h3>
+                <div class="patient-info-item">
+                    <span class="info-label">姓名</span>
+                    <span class="info-value" id="infoName">-</span>
+                </div>
+                <div class="patient-info-item">
+                    <span class="info-label">性别</span>
+                    <span class="info-value" id="infoGender">-</span>
+                </div>
+                <div class="patient-info-item">
+                    <span class="info-label">年龄</span>
+                    <span class="info-value" id="infoAge">-</span>
+                </div>
+                <div class="patient-info-item">
+                    <span class="info-label">联系电话</span>
+                    <span class="info-value" id="infoPhone">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="patient.js"></script>
+</body>
+</html>
