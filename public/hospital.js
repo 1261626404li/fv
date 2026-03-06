@@ -30,7 +30,7 @@ function updateCurrentTime() {
 // WebSocket连接
 function connectWebSocket() {
 
-    const wsUrl = "ws://https://fv-xhhv.onrender.com/";
+    const wsUrl = "wss://fv-xhhv.onrender.com/";
     ws = new WebSocket(wsUrl);
 
     ws.onopen = function() {
