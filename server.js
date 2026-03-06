@@ -1,14 +1,17 @@
-// server.js - MySQL 版本
+// server.js - 整合版本（MySQL + WebSocket + 前端静态文件）
+
+const express = require("express");
+const path = require("path");
 const WebSocket = require("ws");
 const mysql = require("mysql2");
 
-// ====== 配置 MySQL 连接 ======
+// ====== MySQL 配置 ======
 const db = mysql.createConnection({
-  host: "gz-cdb-adv3exr5.sql.tencentcdb.com",  // 例如 172.16.0.11
-  user: "root",          // 例如 cdb577682
-  password: "414811246Li",        // 数据库用户密码
-  database: "hospital",        // 数据库名
-  port: 26251                   // MySQL 默认端口
+  host: "gz-cdb-adv3exr5.sql.tencentcdb.com",  // 替换为你的数据库公网地址
+  user: "root",                                  // 数据库用户名
+  password: "414811246Li",                       // 数据库密码
+  database: "hospital",                          // 数据库名
+  port: 26251                                    // 数据库端口
 });
 
 // 测试数据库连接
@@ -20,8 +23,24 @@ db.connect(err => {
   }
 });
 
+// ====== Express 提供前端静态文件 ======
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// 假设前端文件放在项目根目录的 public 文件夹
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/index.html"));
+});
+
+// ====== 启动 HTTP 服务器 ======
+const server = app.listen(PORT, () => {
+  console.log(`HTTP服务器运行在 http://localhost:${PORT}`);
+});
+
 // ====== WebSocket 服务器 ======
-const wss = new WebSocket.Server({ port: 4000 });
+const wss = new WebSocket.Server({ server });
 let clients = [];
 
 wss.on("connection", ws => {
@@ -69,7 +88,7 @@ wss.on("connection", ws => {
   });
 });
 
-// 广播消息给所有客户端
+// ====== 广播消息给所有客户端 ======
 function broadcast(data) {
   clients.forEach(c => {
     if (c.readyState === WebSocket.OPEN) {
@@ -78,4 +97,4 @@ function broadcast(data) {
   });
 }
 
-console.log("WebSocket服务器运行在 ws://localhost:3000");
+console.log(`WebSocket服务器绑定在 HTTP服务器上，端口 ${PORT}`);
